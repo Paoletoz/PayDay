@@ -30,7 +30,9 @@ function getPattern(number) {
 
 btni.addEventListener('click', () => {
     
-    
+    if(num.value < 100){
+        return
+    }
 
     let div = document.createElement('div');
     
