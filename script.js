@@ -30,14 +30,13 @@ function getPattern(number) {
 
 btni.addEventListener('click', () => {
     
-    if(num.value < 100){
-        return
-    }
     
     let partial = getPattern(num.value);
     let div = document.createElement('div');
     let total = partial + 1500;
     
+    wrapper.innerHTML = `` 
+
     div.innerHTML = `
         <div class="container">
             <div class="row">
