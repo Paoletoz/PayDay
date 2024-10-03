@@ -3,6 +3,7 @@ let row = document.querySelector('#row');
 let btni = document.querySelector('#btni');
 let wrapper = document.querySelector('#wrapper');
 let btnRound = document.querySelector('#btnRound');
+let giro = document.querySelector('#giro');
 
 let count = 1;
 localStorage.setItem('round', count);
@@ -55,10 +56,11 @@ btni.addEventListener('click', () => {
 
 btnRound.addEventListener('click', () => {
     
+    giro.innerHTML = `` 
     let div = document.createElement('div');
     div.innerText = `Sei al giro numero ${localStorage.getItem('round')}`;
     
-    round.appendChild(div);
+    giro.appendChild(div);
 })
 
 
