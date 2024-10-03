@@ -1,7 +1,7 @@
 let num = document.querySelector('#num');
 let row = document.querySelector('#row');
 let btni = document.querySelector('#btni');
-let round = document.querySelector('#round');
+let wrapper = document.querySelector('#wrapper');
 let btnRound = document.querySelector('#btnRound');
 
 let count = 1;
@@ -33,21 +33,35 @@ btni.addEventListener('click', () => {
     if(num.value < 100){
         return
     }
-
+    
+    let partial = getPattern(num.value);
     let div = document.createElement('div');
+    let total = partial + 1500;
     
-    div.innerHTML = `la banca ti deve ${getPattern(num.value)} di interessi e sei al giro numero ${count}`;
+    div.innerHTML = `
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-6">
+                    <p>la banca ti deve ${partial}€ di interessi e 1500€ di stipendio</p>
+                </div>
+                <div class="col-12 col-6 mt-5">
+                    <p>Totale: ${total}€</p>
+                    <p>Giro: ${count}</p>
+                </div>
+            </div>
+        </div>
+    `
     
-    round.appendChild(div);
+    wrapper.appendChild(div);
     
 })
 
 
 btnRound.addEventListener('click', () => {
-
+    
     let div = document.createElement('div');
     div.innerText = `Sei al giro numero ${localStorage.getItem('round')}`;
-
+    
     round.appendChild(div);
 })
 
