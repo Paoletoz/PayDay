@@ -12,9 +12,6 @@ function getPattern(number) {
     count++;
     localStorage.setItem('round', count);
     
-    if (number < 100) {
-        return "Numero fuori dal range specificato";
-    }
     
     
     const baseInterval = 500;
