@@ -42,7 +42,7 @@ btni.addEventListener('click', () => {
                     <p>la banca ti deve ${partial > 0 ? partial + "€ di interessi e ": ""} 1500€ di stipendio ${poste.value > 0 ? "e devi pagare " + poste.value + "€" : ""}</p>
                 </div>
                 <div class="col-12 col-6 mt-5">
-                    <p class="bg-">Totale: ${total}€</p>
+                    <p class="bg-success">Totale: ${total}€</p>
                     ${poste.value > 0 ? "<p class='bg-danger'>Totale poste:" + poste.value + "€</p>": ""}
                     <p>Giro: ${count}</p>
                 </div>
