@@ -1,0 +1,11 @@
+.bg-total {
+    background-color: rgba(0, 255, 0, 0.353);
+}
+
+.bg-tax {
+    background-color: rgba(255, 0, 0, 0.353);
+}
+
+.bg-round {
+    background-color: rgba(255, 255, 0, 0.353);
+} 

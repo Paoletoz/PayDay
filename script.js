@@ -42,9 +42,9 @@ btni.addEventListener('click', () => {
                     <p>la banca ti deve ${partial > 0 ? partial + "€ di interessi e ": ""} 1500€ di stipendio ${poste.value > 0 ? "e devi pagare " + poste.value + "€" : ""}</p>
                 </div>
                 <div class="col-12 col-6 mt-5">
-                    <p class="bg-success">Totale: ${total}€</p>
-                    ${poste.value > 0 ? "<p class='bg-danger'>Totale poste:" + poste.value + "€</p>": ""}
-                    <p>Giro: ${count}</p>
+                    <p class="bg-total">Totale: ${total}€</p>
+                    ${poste.value > 0 ? "<p class='bg-tax'>Totale poste:" + poste.value + "€</p>": ""}
+                    <p class="bg-round">Giro: ${count}</p>
                 </div>
             </div>
         </div>
@@ -54,7 +54,6 @@ btni.addEventListener('click', () => {
     poste.value = ""
     
     wrapper.appendChild(div);
-    
 })
 
 
@@ -63,6 +62,7 @@ btnRound.addEventListener('click', () => {
     giro.innerHTML = `` 
     let div = document.createElement('div');
     div.innerText = `Sei al giro numero ${localStorage.getItem('round')}`;
+    div.classList.add('bg-round');
     
     giro.appendChild(div);
 })
