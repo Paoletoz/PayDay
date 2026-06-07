@@ -1,11 +1,63 @@
 .bg-total {
-    background-color: rgba(0, 255, 0, 0.353);
+    background-color: rgba(0, 200, 0, 0.2);
+    border-left: 4px solid rgba(0, 180, 0, 0.5);
 }
 
 .bg-tax {
-    background-color: rgba(255, 0, 0, 0.353);
+    background-color: rgba(220, 50, 50, 0.2);
+    border-left: 4px solid rgba(200, 40, 40, 0.5);
 }
 
 .bg-round {
-    background-color: rgba(255, 255, 0, 0.353);
-} 
+    background-color: rgba(255, 200, 0, 0.25);
+    border-left: 4px solid rgba(220, 170, 0, 0.6);
+}
+
+.code-font {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.35em;
+}
+
+.lobby-code-box {
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 16px;
+    padding: 1.25rem 2rem;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.round-ctrl-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.6rem;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.round-display {
+    min-width: 90px;
+}
+
+.ranking-first {
+    background-color: rgba(255, 215, 0, 0.25);
+    border: 2px solid rgba(200, 160, 0, 0.6);
+}
+
+.ranking-second {
+    background-color: rgba(180, 180, 180, 0.25);
+    border: 2px solid rgba(140, 140, 140, 0.6);
+}
+
+.ranking-third {
+    background-color: rgba(180, 100, 50, 0.2);
+    border: 2px solid rgba(150, 80, 40, 0.5);
+}
+
+.ranking-other {
+    background-color: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}

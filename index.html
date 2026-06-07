@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,32 +8,142 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  
-  
-  <div class="container">
+
+  <!-- SCHERMATA: Home -->
+  <div id="screen-home" class="screen container mt-5">
+    <h1 class="text-center mb-5">Giorno di Paga</h1>
     <div class="row justify-content-center">
-      <div class="col-12 col-md-6 my-3" id="round">
-        <label for="num">Inserisci il totale che hai nel libretto</label>
-        <input type="number" id="num" pattern="\d*" inputmode="numeric">
-      </div>      
-      <div class="col-12 col-md-6 my-3">
-        <label for="poste">Inserisci il totale dei soldi per le poste</label>
-        <input type="number" id="poste" pattern="\d*" inputmode="numeric">
-        <p id="giro"></p>
+      <div class="col-12 col-md-5 d-grid gap-3">
+        <button class="btn btn-primary btn-lg" id="btnShowCreate">Crea Lobby</button>
+        <button class="btn btn-outline-primary btn-lg" id="btnShowJoin">Unisciti a una Lobby</button>
       </div>
-      <div class="col-12">
-        <div class="d-flex justify-content-around">
-          <button class="btn btn-warning" id="btnRound">Numero giri</button>
-          <button class="btn btn-success" id="btni">Calcola interesse</button>
+    </div>
+    <div id="createForm" class="row justify-content-center mt-4 d-none">
+      <div class="col-12 col-md-5">
+        <input type="text" id="hostName" class="form-control form-control-lg mb-2" placeholder="Il tuo nome" autocomplete="off">
+        <button class="btn btn-primary w-100" id="btnCreate">Crea</button>
+        <div id="createError" class="text-danger mt-2 d-none"></div>
+      </div>
+    </div>
+    <div id="joinForm" class="row justify-content-center mt-4 d-none">
+      <div class="col-12 col-md-5">
+        <input type="text" id="joinName" class="form-control form-control-lg mb-2" placeholder="Il tuo nome" autocomplete="off">
+        <input type="text" id="joinCode" class="form-control form-control-lg mb-2 code-font" placeholder="Codice lobby (es. AB12CD)" autocomplete="off" maxlength="6">
+        <button class="btn btn-success w-100" id="btnJoin">Entra</button>
+        <div id="joinError" class="text-danger mt-2 d-none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHERMATA: Lobby -->
+  <div id="screen-lobby" class="screen container mt-4 d-none">
+    <div class="text-center mb-4">
+      <h2>Sala d'attesa</h2>
+      <div class="lobby-code-box mx-auto my-3">
+        <small class="text-muted d-block mb-1">Condividi questo codice con gli amici:</small>
+        <span id="lobbyCodeDisplay" class="display-4 fw-bold code-font"></span>
+        <div class="mt-2 d-flex justify-content-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary" id="btnCopyCode">Copia codice</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btnShareLink">Condividi link</button>
+        </div>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-5">
+        <h5>Giocatori (<span id="playerCount">0</span>):</h5>
+        <ul id="playerListLobby" class="list-group mb-3"></ul>
+        <div id="hostControls">
+          <button class="btn btn-success w-100 btn-lg" id="btnStartGame">Inizia Partita</button>
+          <small class="text-muted d-block text-center mt-1">Aspetta che tutti si uniscano, poi premi Inizia</small>
+        </div>
+        <div id="guestWaiting" class="text-center text-muted d-none">
+          <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+          In attesa che l'host avvii la partita...
         </div>
       </div>
     </div>
   </div>
-  <div id="wrapper">
 
+  <!-- SCHERMATA: Gioco -->
+  <div id="screen-game" class="screen container mt-3 d-none">
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-6">
+
+        <!-- Controllo giro -->
+        <div class="d-flex align-items-center justify-content-center gap-3 mb-4">
+          <button class="btn btn-outline-secondary round-ctrl-btn" id="btnRoundMinus">−</button>
+          <div class="bg-round px-4 py-2 rounded text-center round-display">
+            <div class="small text-muted">Giro</div>
+            <div class="fs-2 fw-bold" id="roundDisplay">1</div>
+          </div>
+          <button class="btn btn-outline-secondary round-ctrl-btn" id="btnRoundPlus">+</button>
+        </div>
+
+        <div class="mb-3">
+          <label for="num" class="form-label fw-semibold">Inserisci il totale che hai nel libretto</label>
+          <input type="number" id="num" class="form-control form-control-lg" pattern="\d*" inputmode="numeric" placeholder="0">
+        </div>
+        <div class="mb-3">
+          <label for="poste" class="form-label fw-semibold">Inserisci il totale dei soldi per le poste</label>
+          <input type="number" id="poste" class="form-control form-control-lg" pattern="\d*" inputmode="numeric" placeholder="0">
+        </div>
+
+        <button class="btn btn-success w-100 btn-lg mb-3" id="btni">Calcola interesse</button>
+
+        <div id="wrapper"></div>
+
+        <hr class="my-4">
+        <div id="playerTag" class="text-center text-muted mb-2 small"></div>
+        <div id="endGameSection">
+          <button class="btn btn-danger w-100" id="btnEndGame">Fine Partita</button>
+          <small class="text-muted d-block text-center mt-1">Solo l'host puo' terminare la partita</small>
+        </div>
+        <div id="waitingEndGame" class="text-center text-muted d-none">
+          <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+          In attesa che l'host termini la partita...
+        </div>
+
+      </div>
+    </div>
   </div>
-  
+
+  <!-- SCHERMATA: Inserimento punteggio finale -->
+  <div id="screen-final" class="screen container mt-5 d-none">
+    <h2 class="text-center mb-2">Fine Partita!</h2>
+    <p class="text-center text-muted mb-4">Inserisci il totale dei soldi che hai</p>
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-5">
+        <div id="finalInputSection">
+          <label class="form-label fw-semibold">I tuoi soldi finali (€)</label>
+          <input type="number" id="finalScore" class="form-control form-control-lg mb-3" inputmode="numeric" placeholder="0">
+          <button class="btn btn-primary w-100 btn-lg" id="btnSubmitFinal">Conferma</button>
+        </div>
+        <div id="waitingOthers" class="d-none">
+          <div class="text-center mb-3">
+            <div class="spinner-border text-primary me-2" role="status"></div>
+            <span>In attesa degli altri giocatori...</span>
+          </div>
+          <ul id="finalWaitList" class="list-group"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHERMATA: Classifica -->
+  <div id="screen-ranking" class="screen container mt-5 d-none">
+    <h2 class="text-center mb-4">Classifica Finale</h2>
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-5">
+        <div id="rankingList" class="mb-4"></div>
+        <button class="btn btn-primary w-100 btn-lg" id="btnNewGame">Nuova Partita</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <!-- Firebase SDK (versione compat, non richiede moduli ES) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="./script.js"></script>
 </body>
 </html>
