@@ -16,6 +16,7 @@
       <div class="col-12 col-md-5 d-grid gap-3">
         <button class="btn btn-primary btn-lg" id="btnShowCreate">Crea Lobby</button>
         <button class="btn btn-outline-primary btn-lg" id="btnShowJoin">Unisciti a una Lobby</button>
+        <button class="btn btn-outline-secondary btn-lg" id="btnShowLeaderboard">Classifica Generale</button>
       </div>
     </div>
     <div id="createForm" class="row justify-content-center mt-4 d-none">
@@ -52,6 +53,13 @@
       <div class="col-12 col-md-5">
         <h5>Giocatori (<span id="playerCount">0</span>):</h5>
         <ul id="playerListLobby" class="list-group mb-3"></ul>
+        <div id="maxRoundsSetup" class="mb-3 d-none">
+          <label class="form-label fw-semibold">Numero massimo di giri</label>
+          <div class="input-group">
+            <input type="number" id="maxRoundsInput" class="form-control" value="0" min="0" inputmode="numeric">
+            <span class="input-group-text text-muted">0 = nessun limite</span>
+          </div>
+        </div>
         <div id="hostControls">
           <button class="btn btn-success w-100 btn-lg" id="btnStartGame">Inizia Partita</button>
           <small class="text-muted d-block text-center mt-1">Aspetta che tutti si uniscano, poi premi Inizia</small>
@@ -73,10 +81,21 @@
         <div class="d-flex align-items-center justify-content-center gap-3 mb-4">
           <button class="btn btn-outline-secondary round-ctrl-btn" id="btnRoundMinus">−</button>
           <div class="bg-round px-4 py-2 rounded text-center round-display">
-            <div class="small text-muted">Giro</div>
+            <div class="small text-muted">Il tuo giro</div>
             <div class="fs-2 fw-bold" id="roundDisplay">1</div>
+            <div class="small" id="maxRoundsLabel"></div>
           </div>
           <button class="btn btn-outline-secondary round-ctrl-btn" id="btnRoundPlus">+</button>
+        </div>
+
+        <div id="maxRoundsGameControl" class="d-flex align-items-center justify-content-center gap-2 mb-3 d-none">
+          <small class="text-muted text-nowrap">Giri max:</small>
+          <input type="number" id="maxRoundsGameInput" class="form-control form-control-sm" style="width:80px" min="0" inputmode="numeric" value="0">
+          <button class="btn btn-sm btn-outline-secondary" id="btnUpdateMaxRounds">Aggiorna</button>
+        </div>
+
+        <div id="playersRoundsPanel" class="mb-3 d-none">
+          <ul id="playersRoundsList" class="list-group list-group-sm"></ul>
         </div>
 
         <div class="mb-3">
@@ -96,7 +115,7 @@
         <div id="playerTag" class="text-center text-muted mb-2 small"></div>
         <div id="endGameSection">
           <button class="btn btn-danger w-100" id="btnEndGame">Fine Partita</button>
-          <small class="text-muted d-block text-center mt-1">Solo l'host puo' terminare la partita</small>
+          <div id="endGameStatus" class="small text-center mt-2"></div>
         </div>
         <div id="waitingEndGame" class="text-center text-muted d-none">
           <div class="spinner-border spinner-border-sm me-2" role="status"></div>
@@ -129,13 +148,25 @@
     </div>
   </div>
 
-  <!-- SCHERMATA: Classifica -->
+  <!-- SCHERMATA: Classifica finale partita -->
   <div id="screen-ranking" class="screen container mt-5 d-none">
     <h2 class="text-center mb-4">Classifica Finale</h2>
     <div class="row justify-content-center">
       <div class="col-12 col-md-5">
         <div id="rankingList" class="mb-4"></div>
+        <button class="btn btn-outline-secondary w-100 mb-2" id="btnGoLeaderboard">Vedi classifica generale</button>
         <button class="btn btn-primary w-100 btn-lg" id="btnNewGame">Nuova Partita</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCHERMATA: Classifica generale (vittorie) -->
+  <div id="screen-leaderboard" class="screen container mt-5 d-none">
+    <h2 class="text-center mb-4">Classifica Generale</h2>
+    <div class="row justify-content-center">
+      <div class="col-12 col-md-5">
+        <div id="leaderboardList" class="mb-4"></div>
+        <button class="btn btn-outline-secondary w-100" id="btnBackLeaderboard">Torna alla home</button>
       </div>
     </div>
   </div>

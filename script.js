@@ -1,25 +1,5 @@
 // ================================================================
-// CONFIGURAZIONE FIREBASE — DA COMPLETARE PRIMA DI USARE
-// ================================================================
-//
-// Come creare il progetto Firebase (gratis, 5 minuti):
-//
-// 1. Vai su https://console.firebase.google.com
-//    → Clicca "Aggiungi progetto" → dai un nome (es. "giorno-di-paga")
-//    → Disabilita Google Analytics se vuoi → Crea progetto
-//
-// 2. Nel menu a sinistra: "Build" → "Realtime Database"
-//    → Clicca "Crea database"
-//    → Scegli la posizione europea (europe-west1)
-//    → Seleziona "Modalita' test" (regole aperte per 30 giorni)
-//    → Clicca "Abilita"
-//
-// 3. Torna alla home del progetto (icona ingranaggio ⚙️ → "Impostazioni progetto")
-//    → Scheda "Generale" → scorri fino a "Le tue app"
-//    → Clicca sull'icona </> (Web)
-//    → Dai un nickname all'app → "Registra app"
-//    → Copia i valori di firebaseConfig qui sotto
-//
+// CONFIGURAZIONE FIREBASE
 // ================================================================
 const firebaseConfig = {
     apiKey: "AIzaSyDk0TAy1tpgxPja7AMGAgZbjuT5H-Y86kg",
@@ -43,6 +23,7 @@ let state = {
   lobbyCode: null,
   isHost: false,
   round: 1,
+  maxRounds: 0,
 };
 
 let activeListener = null;
@@ -67,7 +48,6 @@ function setListener(ref, callback) {
 // UTILITIES
 // ================================================================
 function generateCode() {
-  // Caratteri senza ambiguità visiva (no O/0, I/1, ecc.)
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
@@ -104,8 +84,6 @@ function showError(id, msg) {
 // ================================================================
 // HOME — schermata iniziale
 // ================================================================
-
-// Se nell'URL c'è un hash con il codice lobby, pre-compila il form
 window.addEventListener('load', () => {
   const hash = window.location.hash.slice(1).toUpperCase();
   if (hash.length === 6) {
@@ -143,10 +121,10 @@ document.getElementById('btnCreate').addEventListener('click', async () => {
   try {
     await db.ref(`lobbies/${code}`).set({
       status: 'waiting',
-      round: 1,
+      maxRounds: 0,
       host: playerId,
       players: {
-        [playerId]: { name, finalScore: null }
+        [playerId]: { name, round: 1, finalScore: null }
       }
     });
     window.location.hash = code;
@@ -170,7 +148,7 @@ document.getElementById('btnJoin').addEventListener('click', async () => {
     }
     const data = snapshot.val();
     if (data.status === 'ended') {
-      showError('joinError', 'Questa partita e\' gia\' terminata.');
+      showError('joinError', "Questa partita e' gia' terminata.");
       return;
     }
 
@@ -180,10 +158,10 @@ document.getElementById('btnJoin').addEventListener('click', async () => {
     state.lobbyCode = code;
     state.isHost = false;
 
-    await db.ref(`lobbies/${code}/players/${playerId}`).set({ name, finalScore: null });
+    await db.ref(`lobbies/${code}/players/${playerId}`).set({ name, round: 1, finalScore: null });
 
     if (data.status === 'playing') {
-      enterGame(data.round || 1);
+      enterGame();
     } else {
       enterLobby();
     }
@@ -201,9 +179,11 @@ function enterLobby() {
   if (state.isHost) {
     document.getElementById('hostControls').classList.remove('d-none');
     document.getElementById('guestWaiting').classList.add('d-none');
+    document.getElementById('maxRoundsSetup').classList.remove('d-none');
   } else {
     document.getElementById('hostControls').classList.add('d-none');
     document.getElementById('guestWaiting').classList.remove('d-none');
+    document.getElementById('maxRoundsSetup').classList.add('d-none');
   }
 
   showScreen('screen-lobby');
@@ -232,7 +212,7 @@ function enterLobby() {
 
     if (data.status === 'playing') {
       clearListener();
-      enterGame(data.round || 1);
+      enterGame();
     }
   };
 
@@ -270,25 +250,31 @@ document.getElementById('btnShareLink').addEventListener('click', () => {
 
 document.getElementById('btnStartGame').addEventListener('click', async () => {
   if (!state.isHost) return;
-  await db.ref(`lobbies/${state.lobbyCode}`).update({ status: 'playing', round: 1 });
+  const maxRounds = parseInt(document.getElementById('maxRoundsInput').value) || 0;
+  await db.ref(`lobbies/${state.lobbyCode}`).update({ status: 'playing', maxRounds });
 });
 
 // ================================================================
 // GIOCO — schermata principale
 // ================================================================
-function enterGame(initialRound) {
+function enterGame() {
   clearListener();
-  state.round = initialRound;
-  document.getElementById('roundDisplay').textContent = state.round;
+  state.round = 1;
+  state.maxRounds = 0;
+  document.getElementById('roundDisplay').textContent = 1;
   document.getElementById('wrapper').innerHTML = '';
   document.getElementById('playerTag').textContent = `Giocatore: ${state.playerName}`;
+  document.getElementById('maxRoundsLabel').textContent = '';
+  document.getElementById('playersRoundsPanel').classList.add('d-none');
 
   if (state.isHost) {
     document.getElementById('endGameSection').classList.remove('d-none');
     document.getElementById('waitingEndGame').classList.add('d-none');
+    document.getElementById('maxRoundsGameControl').classList.remove('d-none');
   } else {
     document.getElementById('endGameSection').classList.add('d-none');
     document.getElementById('waitingEndGame').classList.remove('d-none');
+    document.getElementById('maxRoundsGameControl').classList.add('d-none');
   }
 
   showScreen('screen-game');
@@ -297,10 +283,51 @@ function enterGame(initialRound) {
   const onGameChange = (snapshot) => {
     if (!snapshot.exists()) return;
     const data = snapshot.val();
+    const players = data.players || {};
+    const maxRounds = data.maxRounds || 0;
+    state.maxRounds = maxRounds;
 
-    if (data.round !== state.round) {
-      state.round = data.round;
-      document.getElementById('roundDisplay').textContent = state.round;
+    // Sincronizza il campo giri max (host) con il valore Firebase
+    if (state.isHost) {
+      const input = document.getElementById('maxRoundsGameInput');
+      if (document.activeElement !== input) {
+        input.value = maxRounds;
+      }
+    }
+
+    // Aggiorna il giro del giocatore corrente
+    const myData = players[state.playerId];
+    if (myData) {
+      const myRound = myData.round || 1;
+      if (myRound !== state.round) {
+        state.round = myRound;
+        document.getElementById('roundDisplay').textContent = myRound;
+      }
+      // Mostra etichetta giro massimo
+      const label = document.getElementById('maxRoundsLabel');
+      if (maxRounds > 0) {
+        label.textContent = `di ${maxRounds}`;
+        label.className = myRound >= maxRounds ? 'small text-danger fw-bold' : 'small text-muted';
+      } else {
+        label.textContent = '';
+      }
+    }
+
+    // Aggiorna pannello giri di tutti
+    updatePlayersRoundsPanel(players, maxRounds);
+
+    // Aggiorna stato pulsante Fine Partita (solo host)
+    if (state.isHost) {
+      updateEndGameButton(players, maxRounds);
+
+      // Auto-fine quando tutti hanno raggiunto il giro massimo
+      if (maxRounds > 0) {
+        const allAtMax = Object.values(players).every(p => (p.round || 1) >= maxRounds);
+        if (allAtMax) {
+          db.ref(`lobbies/${state.lobbyCode}`).update({ status: 'ended' });
+          return;
+        }
+      }
     }
 
     if (data.status === 'ended') {
@@ -312,21 +339,99 @@ function enterGame(initialRound) {
   setListener(lobbyRef, onGameChange);
 }
 
+function updatePlayersRoundsPanel(players, maxRounds) {
+  const panel = document.getElementById('playersRoundsPanel');
+  const list = document.getElementById('playersRoundsList');
+  const entries = Object.entries(players);
+
+  if (entries.length <= 1) {
+    panel.classList.add('d-none');
+    return;
+  }
+
+  panel.classList.remove('d-none');
+  const maxRound = Math.max(...entries.map(([, p]) => p.round || 1));
+
+  entries.sort((a, b) => (b[1].round || 1) - (a[1].round || 1));
+
+  list.innerHTML = '';
+  entries.forEach(([id, p]) => {
+    const round = p.round || 1;
+    const diff = maxRound - round;
+    const isMe = id === state.playerId;
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center py-1';
+
+    let badge;
+    if (maxRounds > 0 && round >= maxRounds) {
+      badge = `<span class="badge bg-danger">Giro ${round} — al limite</span>`;
+    } else if (diff === 0) {
+      badge = `<span class="badge bg-success">Giro ${round}</span>`;
+    } else {
+      badge = `<span class="badge bg-warning text-dark">Giro ${round} &mdash; indietro di ${diff}</span>`;
+    }
+
+    li.innerHTML = `<span>${isMe ? `<strong>${p.name} (tu)</strong>` : p.name}</span>${badge}`;
+    list.appendChild(li);
+  });
+}
+
+function updateEndGameButton(players, maxRounds) {
+  const btn = document.getElementById('btnEndGame');
+  const statusEl = document.getElementById('endGameStatus');
+  const entries = Object.entries(players);
+  const rounds = entries.map(([, p]) => p.round || 1);
+  const allSame = rounds.every(r => r === rounds[0]);
+
+  if (allSame) {
+    btn.disabled = false;
+    btn.className = 'btn btn-danger w-100';
+    if (maxRounds > 0 && rounds[0] >= maxRounds) {
+      statusEl.textContent = 'Tutti hanno raggiunto il giro massimo!';
+      statusEl.className = 'small text-center mt-2 text-danger fw-bold';
+    } else {
+      statusEl.textContent = 'Tutti sono allo stesso giro';
+      statusEl.className = 'small text-center mt-2 text-success';
+    }
+  } else {
+    btn.disabled = true;
+    btn.className = 'btn btn-outline-danger w-100';
+    const maxRound = Math.max(...rounds);
+    const behind = entries
+      .filter(([, p]) => (p.round || 1) < maxRound)
+      .map(([, p]) => {
+        const diff = maxRound - (p.round || 1);
+        return `${p.name}: manca${diff > 1 ? 'no' : ''} ${diff} giro${diff > 1 ? 'i' : ''}`;
+      });
+    statusEl.innerHTML = behind.join('<br>');
+    statusEl.className = 'small text-center mt-2 text-warning';
+  }
+}
+
+document.getElementById('btnUpdateMaxRounds').addEventListener('click', async () => {
+  if (!state.isHost) return;
+  const newMax = parseInt(document.getElementById('maxRoundsGameInput').value) || 0;
+  await db.ref(`lobbies/${state.lobbyCode}/maxRounds`).set(newMax);
+});
+
 document.getElementById('btnRoundPlus').addEventListener('click', async () => {
-  await db.ref(`lobbies/${state.lobbyCode}/round`).set(state.round + 1);
+  const newRound = state.round + 1;
+  if (state.maxRounds > 0 && newRound > state.maxRounds) return;
+  await db.ref(`lobbies/${state.lobbyCode}/players/${state.playerId}/round`).set(newRound);
 });
 
 document.getElementById('btnRoundMinus').addEventListener('click', async () => {
   if (state.round <= 1) return;
-  await db.ref(`lobbies/${state.lobbyCode}/round`).set(state.round - 1);
+  await db.ref(`lobbies/${state.lobbyCode}/players/${state.playerId}/round`).set(state.round - 1);
 });
 
-document.getElementById('btni').addEventListener('click', () => {
+document.getElementById('btni').addEventListener('click', async () => {
   const numVal = Number(document.getElementById('num').value) || 0;
   const posteVal = Number(document.getElementById('poste').value) || 0;
 
   const interest = numVal > 50 ? getInterest(numVal) : 0;
   const total = (interest + 1500) - posteVal;
+  const currentRound = state.round;
 
   document.getElementById('wrapper').innerHTML = `
     <div class="container mt-3">
@@ -337,7 +442,7 @@ document.getElementById('btni').addEventListener('click', () => {
         <div class="col-12">
           <p class="bg-total p-2 rounded mb-2">Totale: <strong>${total}€</strong></p>
           ${posteVal > 0 ? `<p class="bg-tax p-2 rounded mb-2">Totale poste: ${posteVal}€</p>` : ''}
-          <p class="bg-round p-2 rounded mb-2">Giro: ${state.round}</p>
+          <p class="bg-round p-2 rounded mb-2">Giro: ${currentRound}</p>
         </div>
       </div>
     </div>
@@ -345,6 +450,16 @@ document.getElementById('btni').addEventListener('click', () => {
 
   document.getElementById('num').value = '';
   document.getElementById('poste').value = '';
+
+  // Auto-incrementa il giro ad ogni calcolo
+  if (state.lobbyCode && state.playerId) {
+    const newRound = state.maxRounds > 0
+      ? Math.min(currentRound + 1, state.maxRounds)
+      : currentRound + 1;
+    if (newRound > currentRound) {
+      await db.ref(`lobbies/${state.lobbyCode}/players/${state.playerId}/round`).set(newRound);
+    }
+  }
 });
 
 document.getElementById('btnEndGame').addEventListener('click', async () => {
@@ -381,7 +496,7 @@ function enterFinalInput() {
       li.innerHTML = `
         <span>${p.name}</span>
         <span class="${hasScore ? 'text-success' : 'text-muted'}">
-          ${hasScore ? '✓ ' + p.finalScore + '€' : 'in attesa...'}
+          ${hasScore ? '&#10003; ' + p.finalScore + '€' : 'in attesa...'}
         </span>
       `;
       waitList.appendChild(li);
@@ -408,7 +523,7 @@ document.getElementById('btnSubmitFinal').addEventListener('click', async () => 
 });
 
 // ================================================================
-// CLASSIFICA FINALE
+// CLASSIFICA FINALE PARTITA
 // ================================================================
 function showRanking(players) {
   const sorted = Object.values(players).sort((a, b) => b.finalScore - a.finalScore);
@@ -434,17 +549,70 @@ function showRanking(players) {
     rankingList.appendChild(div);
   });
 
+  // L'host registra la vittoria del primo classificato
+  if (state.isHost && sorted.length > 0) {
+    const winner = sorted[0];
+    const key = winner.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '') || 'player';
+    db.ref(`leaderboard/${key}`).transaction(current => {
+      if (!current) return { name: winner.name, wins: 1 };
+      return { name: current.name, wins: (current.wins || 0) + 1 };
+    });
+  }
+
   showScreen('screen-ranking');
 }
+
+document.getElementById('btnGoLeaderboard').addEventListener('click', () => showLeaderboard());
+
+// ================================================================
+// CLASSIFICA GENERALE (vittorie totali)
+// ================================================================
+async function showLeaderboard() {
+  showScreen('screen-leaderboard');
+  const list = document.getElementById('leaderboardList');
+  list.innerHTML = '<p class="text-muted text-center">Caricamento...</p>';
+
+  const snapshot = await db.ref('leaderboard').once('value');
+  const entries = [];
+  snapshot.forEach(child => entries.push(child.val()));
+  entries.sort((a, b) => b.wins - a.wins);
+
+  if (entries.length === 0) {
+    list.innerHTML = '<p class="text-muted text-center">Nessuna partita ancora completata.</p>';
+    return;
+  }
+
+  const classes = ['ranking-first', 'ranking-second', 'ranking-third', 'ranking-other'];
+  const positions = ['1°', '2°', '3°'];
+  list.innerHTML = '';
+  entries.forEach((entry, i) => {
+    const div = document.createElement('div');
+    div.className = `ranking-item p-3 mb-2 rounded ${classes[Math.min(i, 3)]}`;
+    div.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="fw-bold fs-5 me-2">${positions[i] || (i + 1) + '°'}</span>
+          <span class="fs-5">${entry.name}</span>
+        </div>
+        <div class="fs-5 fw-bold">${entry.wins} vittori${entry.wins === 1 ? 'a' : 'e'}</div>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('btnShowLeaderboard').addEventListener('click', () => showLeaderboard());
+document.getElementById('btnBackLeaderboard').addEventListener('click', () => showScreen('screen-home'));
 
 document.getElementById('btnNewGame').addEventListener('click', () => {
   clearListener();
 
-  state = { playerId: null, playerName: null, lobbyCode: null, isHost: false, round: 1 };
+  state = { playerId: null, playerName: null, lobbyCode: null, isHost: false, round: 1, maxRounds: 0 };
 
   document.getElementById('hostName').value = '';
   document.getElementById('joinName').value = '';
   document.getElementById('joinCode').value = '';
+  document.getElementById('maxRoundsInput').value = '0';
   document.getElementById('createForm').classList.add('d-none');
   document.getElementById('joinForm').classList.add('d-none');
   document.getElementById('wrapper').innerHTML = '';
